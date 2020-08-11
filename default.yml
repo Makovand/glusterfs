@@ -1,0 +1,7 @@
+---
+- name: config
+  hosts:
+    [all]
+  roles:
+    - role: configuration_glusterfs
+    

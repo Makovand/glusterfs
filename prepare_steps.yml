@@ -1,0 +1,24 @@
+---
+- hosts:
+    [all]
+  tasks:
+    - name: Setup utils
+      yum:
+        name:
+          - wget
+        state: present
+      
+    - name: Copy rpm
+      copy:
+        src: /home/makovand/trinity-repo-14.0.8-1.el8.noarch.rpm
+        dest: /opt/trinity-repo-14.0.8-1.el8.noarch.rpm
+    
+    - name: Install trinity
+      shell: yum install /opt/trinity-repo-14.0.8-1.el8.noarch.rpm -y
+
+    - name: Setup python3-pyxattr
+      yum:
+        name:
+          - python3-pyxattr.x86_64
+          - centos-release-gluster7.noarch
+        state: installed

@@ -1,0 +1,67 @@
+---
+- name: Modify /etc/hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '.*{{ item }}$' 
+    insertafter: EOF
+    line: "{{ hostvars[item].ansible_host }} {{ item }}"
+    state: present
+  with_items:
+    "{{ groups['all'] }}"
+  when:
+    hostvars[item].ansible_host is defined
+
+- name: Install GlusterFS
+  yum:
+    name:
+      - glusterfs-server.x86_64
+    state: present
+    
+- name: Create directory for GlusterFS
+  file:
+    path: /opt/gvolume-1
+    state: directory
+
+- name: Create directory for Docker
+  file:
+    path: /opt/dockervolume1
+    state: directory
+
+- name: Start GlusterFS service
+  service:
+    name: glusterd
+    enabled: yes
+    state: started
+
+- name: Create GlusterFS cluster
+  gluster_peer:
+      state: present 
+      nodes:
+        - 192.168.56.101
+        - 192.168.56.104
+        - 192.168.56.105
+  run_once: true
+
+
+- name: Create GlusterFS volume
+  gluster_volume:
+      name: gvolume1
+      state: present
+      force: true
+      replicas: 3
+      bricks: /opt/gvolume-1
+      cluster: 192.168.56.101,192.168.56.104,192.168.56.105
+      start_on_create: yes
+      transport: tcp 
+      options:
+        {
+          auth.allow: localhost
+        }
+  run_once: true
+
+- name: Mount gluster volume
+  mount:
+      state: mounted 
+      path: /opt/dockervolume1 
+      src: localhost:/gvolume1
+      fstype: glusterfs
