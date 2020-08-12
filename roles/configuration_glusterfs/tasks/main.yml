@@ -1,4 +1,7 @@
 ---
+- name: Gather service facts
+  service_facts:
+  
 - name: Modify /etc/hosts
   lineinfile:
     dest: /etc/hosts
@@ -33,31 +36,30 @@
     enabled: yes
     state: started
 
-- name: Create GlusterFS cluster
-  gluster_peer:
-      state: present 
-      nodes:
-        - 192.168.56.101
-        - 192.168.56.104
-        - 192.168.56.105
-  run_once: true
+- name: Configuration cluster and volume
+  block: 
+    - name: Create GlusterFS cluster
+      gluster_peer:
+        state: present 
+        nodes: "{{ lookup('inventory_hostnames','all') }}"
+      run_once: true
 
-
-- name: Create GlusterFS volume
-  gluster_volume:
-      name: gvolume1
-      state: present
-      force: true
-      replicas: 3
-      bricks: /opt/gvolume-1
-      cluster: 192.168.56.101,192.168.56.104,192.168.56.105
-      start_on_create: yes
-      transport: tcp 
-      options:
-        {
-          auth.allow: localhost
-        }
-  run_once: true
+    - name: Create GlusterFS volume
+      gluster_volume:
+        name: gvolume1
+        state: present
+        force: true
+        replicas: 3
+        bricks: /opt/gvolume-1
+        cluster: "{{ lookup('inventory_hostnames','all') }}"
+        start_on_create: yes
+        transport: tcp 
+        options:
+          {
+            auth.allow: localhost
+          }
+      run_once: true
+  when: ansible_facts.services['glusterd.service']['state'] == "running"
 
 - name: Mount gluster volume
   mount:
